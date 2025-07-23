@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('address');
             $table->date('joined_date');
             $table->timestamps();
-            $table->foreign('employee_id')->references('id')->on('employees');
+            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
         });
     }
 

@@ -28,7 +28,13 @@ class EmployeeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Employee::with(['department', 'detail']);
+        if ($request->input('with_trashed')) {
+            $query = Employee::withTrashed()->with(['department', 'detail']);
+        } elseif ($request->input('only_trashed')) {
+            $query = Employee::onlyTrashed()->with(['department', 'detail']);
+        } else {
+            $query = Employee::with(['department', 'detail']);
+        }
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
@@ -45,8 +51,12 @@ class EmployeeController extends Controller
             $query->whereHas('detail', fn($q) => $q->where('salary', '<=', $salaryMax));
         }
         if ($sort = $request->input('sort')) {
-            $query->join('employee_details', 'employees.id', '=', 'employee_details.employee_id')
-                ->orderBy('employee_details.joined_date', $sort == 'desc' ? 'desc' : 'asc');
+            $query->orderBy(
+                EmployeeDetail::select('joined_date')
+                    ->whereColumn('employee_details.employee_id', 'employees.id')
+                    ->limit(1),
+                $sort == 'desc' ? 'desc' : 'asc'
+            );
         }
         $employees = $query->paginate(15);
         return response()->json($employees);
@@ -87,9 +97,13 @@ class EmployeeController extends Controller
      *   @OA\Response(response=404, description="Not found")
      * )
      */
-    public function show($id)
+    public function show($id, Request $request)
     {
-        $employee = Employee::with(['department', 'detail'])->findOrFail($id);
+        if ($request->input('with_trashed')) {
+            $employee = Employee::withTrashed()->with(['department', 'detail'])->findOrFail($id);
+        } else {
+            $employee = Employee::with(['department', 'detail'])->findOrFail($id);
+        }
         return response()->json($employee);
     }
 

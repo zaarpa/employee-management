@@ -1,9 +1,19 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Models\Department;
 
-// Remove authentication middleware for public access
+// Employee CRUD routes
 Route::apiResource('employees', EmployeeController::class);
 
-Route::get('/departments', function () {
-return Department::all();
+// Departments endpoint
+Route::get('/departments', function (\Illuminate\Http\Request $request) {
+    if ($request->input('with_trashed')) {
+        return \App\Models\Department::withTrashed()->get();
+    } elseif ($request->input('only_trashed')) {
+        return \App\Models\Department::onlyTrashed()->get();
+    } else {
+        return \App\Models\Department::all();
+    }
 });
